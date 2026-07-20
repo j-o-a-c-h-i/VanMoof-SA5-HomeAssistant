@@ -95,6 +95,7 @@ async def async_setup_entry(
 ) -> None:
     coordinator: VanMoofDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
     entities: list[VanMoofSensor] = []
+    if coordinator.data is None: return
     for bike_id in coordinator.data.bikes:
         entities.extend(VanMoofSensor(coordinator, bike_id, description) for description in SENSORS)
     async_add_entities(entities)

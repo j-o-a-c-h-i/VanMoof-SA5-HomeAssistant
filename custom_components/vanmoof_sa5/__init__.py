@@ -1,7 +1,7 @@
 """The VanMoof SA5 Home Assistant integration."""
 from __future__ import annotations
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
+from homeassistant.const import Platform, EVENT_HOMEASSISTANT_STARTED
 from homeassistant.core import HomeAssistant
 from .api import async_bootstrap_client
 from .const import DOMAIN, PLATFORMS
@@ -11,7 +11,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up VanMoof SA5 from a config entry."""
     api = await async_bootstrap_client(hass, dict(entry.data))
     coordinator = VanMoofDataUpdateCoordinator(hass, entry, api)
-    await coordinator.async_config_entry_first_refresh()
+
+    # Initialize data from API (cloud data, no BLE needed)
+    await coordinator.async_refresh()
+
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     await hass.config_entries.async_forward_entry_setups(
         entry, [Platform(platform) for platform in PLATFORMS]
