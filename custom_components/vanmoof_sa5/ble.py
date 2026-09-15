@@ -121,6 +121,13 @@ class VanMoofBikeBleClient:
             return [stored, *matched]
         return matched
 
+    def _resolve_device(self, fallback: BLEDevice) -> BLEDevice:
+        """Re-resolve the BLEDevice from HA's bluetooth manager before each connect attempt."""
+        return (
+            bluetooth.async_ble_device_from_address(self._hass, fallback.address, connectable=True)
+            or fallback
+        )
+
     async def _async_read_candidate(self, device: BLEDevice) -> BikeState:
         if not self._bike.certificate or not self._bike.private_key:
             raise VanMoofBleError("Missing certificate or private key for bike")
@@ -134,7 +141,10 @@ class VanMoofBikeBleClient:
                 queue.put_nowait(message)
 
         client = await establish_connection(
-            BleakClient, device, device.name or device.address
+            BleakClient,
+            device,
+            device.name or device.address,
+            ble_device_callback=lambda: self._resolve_device(device),
         )
         try:
             write_uuid = await self._async_authenticate_connection(
@@ -181,7 +191,10 @@ class VanMoofBikeBleClient:
                 queue.put_nowait(message)
 
         client = await establish_connection(
-            BleakClient, device, device.name or device.address
+            BleakClient,
+            device,
+            device.name or device.address,
+            ble_device_callback=lambda: self._resolve_device(device),
         )
         try:
             write_uuid = await self._async_authenticate_connection(
