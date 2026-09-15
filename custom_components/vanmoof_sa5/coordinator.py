@@ -68,6 +68,9 @@ class VanMoofDataUpdateCoordinator(DataUpdateCoordinator[VanMoofCoordinatorData]
                 state.last_seen = dt_util.utcnow()
                 states[bike.unique_id] = state
             except VanMoofBleError as err:
+                _LOGGER.warning(
+                    "VanMoof BLE update failed for %s: %s", bike.frame_number, err
+                )
                 states[bike.unique_id] = BikeState(
                     available=False,
                     in_range=False,
