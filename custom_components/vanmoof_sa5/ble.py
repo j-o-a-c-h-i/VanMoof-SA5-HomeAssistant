@@ -8,13 +8,15 @@ import json
 import logging
 from typing import Any
 
-from bleak import BleakClient, BleakScanner
+from bleak import BleakClient
 from bleak.backends.device import BLEDevice
 from bleak_retry_connector import establish_connection
 
+from homeassistant.components import bluetooth
+from homeassistant.core import HomeAssistant
+
 from .const import (
     APP_CHAR_UUID,
-    DEFAULT_SCAN_SECONDS,
     SERVICE_UUID,
     SERVICE_UUID_NODASH,
     WRITE_CHAR_UUID,
@@ -43,7 +45,8 @@ class VanMoofBleError(Exception):
 class VanMoofBikeBleClient:
     """Connect to a single VanMoof bike over BLE."""
 
-    def __init__(self, bike: VanMoofBike) -> None:
+    def __init__(self, hass: HomeAssistant, bike: VanMoofBike) -> None:
+        self._hass = hass
         self._bike = bike
 
     async def async_fetch_state(self) -> tuple[BikeState, str | None]:
@@ -95,16 +98,11 @@ class VanMoofBikeBleClient:
         )
 
     async def _async_discover_candidates(self) -> list[BLEDevice]:
-        discovered = await BleakScanner.discover(
-            timeout=DEFAULT_SCAN_SECONDS,
-            return_adv=True,
-        )
-
         matched: list[BLEDevice] = []
         stored: BLEDevice | None = None
-        for _, (device, advertisement) in discovered.items():
-            name = ((advertisement.local_name or device.name) or "").lower()
-            services = {service.lower() for service in advertisement.service_uuids or []}
+        for info in bluetooth.async_discovered_service_info(self._hass, connectable=True):
+            name = (info.name or "").lower()
+            services = {service.lower() for service in info.service_uuids or []}
             is_vanmoof = (
                 "vanmoof" in name
                 or name.startswith("xs4-")
@@ -113,6 +111,7 @@ class VanMoofBikeBleClient:
             )
             if not is_vanmoof:
                 continue
+            device = info.device
             if self._bike.ble_address and device.address.lower() == self._bike.ble_address.lower():
                 stored = device
             else:
