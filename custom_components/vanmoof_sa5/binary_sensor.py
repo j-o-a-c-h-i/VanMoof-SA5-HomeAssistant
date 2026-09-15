@@ -47,7 +47,6 @@ async def async_setup_entry(
 ) -> None:
     coordinator: VanMoofDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
     entities: list[VanMoofBinarySensor] = []
-    if coordinator.data is None: return
     for bike_id in coordinator.data.bikes:
         entities.extend(
             VanMoofBinarySensor(coordinator, bike_id, description)
