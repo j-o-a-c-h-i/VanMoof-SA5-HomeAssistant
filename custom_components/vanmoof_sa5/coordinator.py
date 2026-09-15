@@ -62,7 +62,7 @@ class VanMoofDataUpdateCoordinator(DataUpdateCoordinator[VanMoofCoordinatorData]
             if self.data:
                 previous_state = self.data.states.get(bike.unique_id)
             try:
-                state, address = await VanMoofBikeBleClient(bike).async_fetch_state()
+                state, address = await VanMoofBikeBleClient(self.hass, bike).async_fetch_state()
                 if address and bike.ble_address != address:
                     bike.ble_address = address
                 state.last_seen = dt_util.utcnow()
