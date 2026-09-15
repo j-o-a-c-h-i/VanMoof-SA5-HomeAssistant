@@ -24,6 +24,7 @@ from .entity import VanMoofEntity
 @dataclass(frozen=True, kw_only=True)
 class VanMoofSensorDescription(SensorEntityDescription):
     value_fn: Callable[[Any], Any]
+    always_available: bool = False
 
 
 SENSORS: tuple[VanMoofSensorDescription, ...] = (
@@ -59,6 +60,7 @@ SENSORS: tuple[VanMoofSensorDescription, ...] = (
     VanMoofSensorDescription(
         key="connection_state",
         translation_key="connection_state",
+        always_available=True,
         value_fn=lambda state: state.connection_state,
     ),
     VanMoofSensorDescription(
@@ -66,6 +68,7 @@ SENSORS: tuple[VanMoofSensorDescription, ...] = (
         translation_key="last_seen",
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_category=EntityCategory.DIAGNOSTIC,
+        always_available=True,
         value_fn=lambda state: state.last_seen,
     ),
     VanMoofSensorDescription(
@@ -83,6 +86,7 @@ SENSORS: tuple[VanMoofSensorDescription, ...] = (
         key="errors",
         translation_key="errors",
         entity_category=EntityCategory.DIAGNOSTIC,
+        always_available=True,
         value_fn=lambda state: state.errors,
     ),
 )
@@ -121,4 +125,4 @@ class VanMoofSensor(VanMoofEntity, SensorEntity):
 
     @property
     def available(self) -> bool:
-        return self.bike_state.available
+        return self.entity_description.always_available or self.bike_state.available
