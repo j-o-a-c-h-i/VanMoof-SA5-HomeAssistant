@@ -1,7 +1,7 @@
 {
   "domain": "vanmoof_sa5",
   "name": "VanMoof SA5",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "config_flow": true,
   "documentation": "https://github.com/j-o-a-c-h-i/VanMoof-SA5-HomeAssistant",
   "issue_tracker": "https://github.com/j-o-a-c-h-i/VanMoof-SA5-HomeAssistant/issues",
