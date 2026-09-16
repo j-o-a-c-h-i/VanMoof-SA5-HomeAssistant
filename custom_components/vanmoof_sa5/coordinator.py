@@ -48,6 +48,9 @@ class VanMoofDataUpdateCoordinator(DataUpdateCoordinator[VanMoofCoordinatorData]
                 seconds=entry.options.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL)
             ),
         )
+        # Entities need bikes to exist immediately at setup time; BLE state is
+        # filled in by the first background refresh once it completes.
+        self.data = VanMoofCoordinatorData(bikes=dict(api.bikes), states={})
 
     async def _async_update_data(self) -> VanMoofCoordinatorData:
         try:

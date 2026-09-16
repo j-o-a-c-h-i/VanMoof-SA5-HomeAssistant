@@ -12,14 +12,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     api = await async_bootstrap_client(hass, dict(entry.data))
     coordinator = VanMoofDataUpdateCoordinator(hass, entry, api)
 
-    # Initialize data from API (cloud data, no BLE needed)
-    await coordinator.async_config_entry_first_refresh()
-
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
     await hass.config_entries.async_forward_entry_setups(
         entry, [Platform(platform) for platform in PLATFORMS]
     )
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
+
+    # BLE fetches can take minutes if the bike is unreachable; run the first
+    # refresh in the background instead of blocking setup on it, otherwise
+    # Home Assistant's bootstrap can forcibly cancel this integration's setup.
+    entry.async_create_background_task(
+        hass, coordinator.async_refresh(), "vanmoof_sa5_initial_refresh"
+    )
     return True
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
