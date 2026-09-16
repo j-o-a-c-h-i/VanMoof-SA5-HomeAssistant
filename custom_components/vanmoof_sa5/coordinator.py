@@ -1,6 +1,7 @@
 """Coordinator for the VanMoof SA5 integration."""
 
 from __future__ import annotations
+import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import timedelta
@@ -14,7 +15,7 @@ from homeassistant.util import dt as dt_util
 
 from .api import VanMoofApiClient, VanMoofApiError
 from .ble import VanMoofBikeBleClient, VanMoofBleError
-from .const import CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL, DOMAIN
+from .const import CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL, DOMAIN, UPDATE_TIMEOUT_SECONDS
 from .models import BikeState, VanMoofBike
 
 _LOGGER = logging.getLogger(__name__)
@@ -56,6 +57,19 @@ class VanMoofDataUpdateCoordinator(DataUpdateCoordinator[VanMoofCoordinatorData]
                 raise ConfigEntryAuthFailed(str(err)) from err
             raise UpdateFailed(str(err)) from err
 
+        try:
+            states = await asyncio.wait_for(
+                self._async_fetch_all_states(), timeout=UPDATE_TIMEOUT_SECONDS
+            )
+        except asyncio.TimeoutError as err:
+            raise UpdateFailed(
+                f"Timed out after {UPDATE_TIMEOUT_SECONDS}s waiting for bike BLE updates"
+            ) from err
+
+        self.hass.async_create_task(self._async_persist_entry())
+        return VanMoofCoordinatorData(bikes=dict(self.api.bikes), states=states)
+
+    async def _async_fetch_all_states(self) -> dict[str, BikeState]:
         states: dict[str, BikeState] = {}
         for bike in self.api.bikes.values():
             previous_state = None
@@ -85,9 +99,7 @@ class VanMoofDataUpdateCoordinator(DataUpdateCoordinator[VanMoofCoordinatorData]
                     last_seen=previous_state.last_seen if previous_state else None,
                     errors=str(err),
                 )
-
-        self.hass.async_create_task(self._async_persist_entry())
-        return VanMoofCoordinatorData(bikes=dict(self.api.bikes), states=states)
+        return states
 
     async def _async_persist_entry(self) -> None:
         new_data = self.api.export_entry_data()

@@ -8,6 +8,7 @@ PLATFORMS = ["sensor", "binary_sensor", "button"]
 
 DEFAULT_POLL_INTERVAL = 300
 CERT_RENEWAL_WINDOW_SECONDS = 24 * 60 * 60
+UPDATE_TIMEOUT_SECONDS = 60
 
 CONF_AUTH_TOKEN = "auth_token"
 CONF_APP_TOKEN = "app_token"
